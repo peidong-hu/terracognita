@@ -3,7 +3,9 @@
 ### Fixed
 
 - Error with the Resource name always being the alphanumeric instead of the Tag Name
-  ([PR #124](https://github.com/cycloidio/terracognita/issues/124))
+  ([PR #124](https://github.com/cycloidio/terracognita/pull/124))
+- Error with mutual interpolation between resources
+  ([PR #125](https://github.com/cycloidio/terracognita/pull/125))
 
 ## [0.5.0] _2020-06-19_
 
