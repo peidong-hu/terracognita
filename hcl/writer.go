@@ -131,7 +131,7 @@ func (w *Writer) Sync() error {
 func (w *Writer) Interpolate(i map[string]string) {
 	resources := w.Config["resource"]
 	// who's interpolated with who
-	relations := make([][]string, 0)
+	relations := make(map[string]struct{}, 0)
 	// we need to isolate each resource
 	// getting each resource is easier to avoid cycle
 	// or interpolaception.
@@ -155,7 +155,7 @@ func (w *Writer) Interpolate(i map[string]string) {
 
 // walk through a resource block. it's easier since we do not know how the block is made
 // `dest` will be the new "block" with the values interpolated from `interpolate`
-func walk(dest, src reflect.Value, interpolate map[string]string, name string, resourceType string, relations *[][]string) {
+func walk(dest, src reflect.Value, interpolate map[string]string, name string, resourceType string, relations *map[string]struct{}) {
 	switch src.Kind() {
 	// it's an interface, so we basically need
 	// to extract the elem and walk through it
@@ -201,7 +201,7 @@ func walk(dest, src reflect.Value, interpolate map[string]string, name string, r
 			if !(strings.Contains(interpolatedValue, name) || strings.Contains(interpolatedValue, resourceType) || isMutualInterpolation(target, source, relations)) {
 				dest.SetString(interpolatedValue)
 				// we store this new relationship
-				*relations = append(*relations, []string{source, target})
+				(*relations)[fmt.Sprintf("%s+%s", source, target)] = struct{}{}
 			} else {
 				dest.SetString(src.Interface().(string))
 			}
@@ -214,15 +214,14 @@ func walk(dest, src reflect.Value, interpolate map[string]string, name string, r
 }
 
 // isMutualInterpolation will simply go through the list of relations to find out
-// if a relation is already present between the two resources
-func isMutualInterpolation(target, source string, relations *[][]string) bool {
-	for _, r := range *relations {
-		if (r[0] == target &&
-			r[1] == source) ||
-			(r[1] == target &&
-				r[0] == source) {
-			return true
-		}
+// if a relation is already present between the two resources in one direction
+// or the other
+func isMutualInterpolation(target, source string, relations *map[string]struct{}) bool {
+	if _, ok := (*relations)[fmt.Sprintf("%s+%s", source, target)]; ok {
+		return true
+	}
+	if _, ok := (*relations)[fmt.Sprintf("%s+%s", target, source)]; ok {
+		return true
 	}
 	return false
 }
